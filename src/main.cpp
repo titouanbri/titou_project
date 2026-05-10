@@ -10,6 +10,8 @@
 #endif
 
 
+std::string portCOM = "COM3"; 
+
 void SendToArduino(const std::string& portName, const std::string& data) {
 #ifdef _WIN32
     // Remarque : Pour les ports COM >= 10, le format doit être "\\\\.\\COM10"
@@ -17,14 +19,14 @@ void SendToArduino(const std::string& portName, const std::string& data) {
     
     HANDLE hSerial = CreateFile(realPortName.c_str(), GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
     if (hSerial == INVALID_HANDLE_VALUE) {
-        std::cerr << "Erreur: Impossible d'ouvrir le port série " << portName << std::endl;
+        std::cerr << "Error: Impossible to open serial port " << portName << std::endl;
         return;
     }
 
     DCB dcbSerialParams = {0};
     dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
     if (!GetCommState(hSerial, &dcbSerialParams)) {
-        std::cerr << "Erreur: Impossible d'obtenir l'état du port série" << std::endl;
+        std::cerr << "Error: impossible to get the serial port state" << std::endl;
         CloseHandle(hSerial);
         return;
     }
@@ -36,16 +38,16 @@ void SendToArduino(const std::string& portName, const std::string& data) {
     dcbSerialParams.Parity = NOPARITY;
 
     if (!SetCommState(hSerial, &dcbSerialParams)) {
-        std::cerr << "Erreur: Impossible de configurer le port série" << std::endl;
+        std::cerr << "Error: Impossible to configure the serial port" << std::endl;
         CloseHandle(hSerial);
         return;
     }
 
     DWORD bytesWritten;
     if (!WriteFile(hSerial, data.c_str(), data.length(), &bytesWritten, NULL)) {
-        std::cerr << "Erreur: Impossible d'écrire sur le port série" << std::endl;
+        std::cerr << "Error: Impossible to write to the serial port" << std::endl;
     } else {
-        std::cout << "Succès: '" << data << "' envoyé à l'Arduino sur " << portName << std::endl;
+        std::cout << "Success: '" << data << "' sent to the Arduino on " << portName << std::endl;
     }
 
     CloseHandle(hSerial);
@@ -129,7 +131,6 @@ int main() {
 
     // Variables pour notre interface
     bool show_demo_window = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     ImVec4 color1 = ImVec4(1.0f, 0.0f, 0.0f, 1.0f); // Rouge
     ImVec4 color2 = ImVec4(0.0f, 1.0f, 0.0f, 1.0f); // Vert
@@ -178,11 +179,23 @@ int main() {
             ImGui::Text("oui oui baguette");
             ImGui::Checkbox("Afficher la démo ImGui", &show_demo_window);
             
-            ImGui::ColorEdit3("Couleur de fond", (float*)&clear_color);
-
             ImGui::ColorEdit3("Couleur 1 ", (float*)&color1);
             ImGui::ColorEdit3("Couleur 2 ", (float*)&color2);
             ImGui::ColorEdit3("Couleur 3 ", (float*)&color3);
+
+            if (ImGui::Button("Envoyer les couleurs a l'Arduino")) {
+                // Buffer pour stocker notre chaîne de caractères formatée
+                char buffer[128]; 
+                
+                // Formatage : "C:R1,G1,B1,R2,G2,B2,R3,G3,B3\n"
+                snprintf(buffer, sizeof(buffer), "C:%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+                    static_cast<int>(color1.x * 255.0f), static_cast<int>(color1.y * 255.0f), static_cast<int>(color1.z * 255.0f),
+                    static_cast<int>(color2.x * 255.0f), static_cast<int>(color2.y * 255.0f), static_cast<int>(color2.z * 255.0f),
+                    static_cast<int>(color3.x * 255.0f), static_cast<int>(color3.y * 255.0f), static_cast<int>(color3.z * 255.0f));
+
+                // Envoi via le port série (Pense à vérifier que c'est bien COM3)
+                SendToArduino(portCOM, std::string(buffer)); 
+            }
 
 
             float alignement_x = ImGui::GetCursorPosX() + 300.0f;
@@ -206,9 +219,9 @@ int main() {
 
 
                 if (pot_state) {
-                    SendToArduino("COM3", "POT_ON\n"); // Remplacez "COM3" par le port série correct
+                    SendToArduino(portCOM, "POT_ON\n"); // Remplacez portCOM par le port série correct
                 } else {
-                    SendToArduino("COM3", "POT_OFF\n");
+                    SendToArduino(portCOM, "POT_OFF\n");
                 }
                 std::cout << "Potentiomètre " << (pot_state ? "ON" : "OFF") << std::endl;
             }
@@ -222,7 +235,6 @@ int main() {
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
         
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
