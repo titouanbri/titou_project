@@ -29,7 +29,7 @@ set(IMGUI_SOURCES
 )
 
 # --- 3. Créer l'exécutable ---
-add_executable(${PROJECT_NAME} WIN32 src/main.cpp ${IMGUI_SOURCES})
+add_executable(${PROJECT_NAME} src/main.cpp ${IMGUI_SOURCES})
 
 # --- 4. Inclure les dossiers et lier les bibliothèques ---
 target_include_directories(${PROJECT_NAME} PRIVATE
