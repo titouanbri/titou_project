@@ -137,6 +137,7 @@ int main() {
 
     bool led_state = false;
     bool pot_state = false;
+    bool silence_state = false;
 
     // Boucle principale
     while (!glfwWindowShouldClose(window)) {
@@ -190,6 +191,14 @@ int main() {
             if (ToggleButton("ToggleLED", &led_state)) {
                 std::cout << "LED " << (led_state ? "ON" : "OFF") << std::endl;
             }
+
+
+            ImGui::Text("Silence mod :");
+            ImGui::SameLine(alignement_x); // Pour mettre l'interrupteur sur la même ligne que le texte
+            if (ToggleButton("ToggleSilence", &silence_state)) {
+                std::cout << "Silence " << (silence_state ? "ON" : "OFF") << std::endl;
+            }
+
 
             ImGui::Text("Potentiomètre luminosité :");
             ImGui::SameLine(alignement_x);
